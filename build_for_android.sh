@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-APP_ABI=(armeabi-v7a x86 arm64-v8a)
+#APP_ABI=(armeabi-v7a x86 arm64-v8a)
+APP_ABI=(armeabi-v7a)
 
 BASE_PATH=$(
 	cd "$(dirname $0)"
@@ -72,19 +73,22 @@ compile() {
 	CFLAGS=$5
 	# https://android.googlesource.com/platform/ndk/+/ics-mr0/docs/STANDALONE-TOOLCHAIN.html
 	export SYSROOT="$SYSROOT"
-	export CFLAGS="$CFLAGS --sysroot=$SYSROOT"
+	export CFLAGS="$CFLAGS --sysroot=$SYSROOT -pie -fPIE"
 	export CPPFLAGS="-I$SYSROOT/usr/include --sysroot=$SYSROOT"
 	export CC="$TOOLCHAIN/$TARGET-gcc"
 	export CPP="$TOOLCHAIN/$TARGET-cpp"
 	export CXX="$TOOLCHAIN/$TARGET-g++"
 	export LD="$TOOLCHAIN/$TARGET-ld"
+    export LDFLAGS="-pie -fPIE"
 	export AS="$TOOLCHAIN/$TARGET-as"
 	export AR="$TOOLCHAIN/$TARGET-ar"
 	export NM="$TOOLCHAIN/$TARGET-nm"
 	export STRIP="$TOOLCHAIN/$TARGET-strip"
 	export RANLIB="$TOOLCHAIN/$TARGET-ranlib"
 	export PKG_CONFIG_PATH="$BUILD_PATH/openssl/$ABI/lib/pkgconfig"
-	# config
+
+
+    # config
 	./buildconf
 	checkExitCode $?
 	safeMakeDir $BUILD_PATH/curl/$ABI
@@ -95,7 +99,7 @@ compile() {
 		--with-ssl=$BUILD_PATH/openssl/$ABI \
 		--with-zlib=$BUILD_PATH/zlib/$ABI \
 		--enable-static \
-		--enable-shared \
+		--disable-shared \
 		--disable-verbose \
 		--enable-threaded-resolver \
 		--enable-libgcc \
@@ -129,8 +133,8 @@ compile() {
 	$AR -cr $BASE_PATH/libs/$ABI/libcurl.a $BASE_PATH/obj/$ABI/curl/*.o $BASE_PATH/obj/$ABI/openssl/*.o $BASE_PATH/obj/$ABI/zlib/*.o
 	checkExitCode $?
 	# copy dylib
-	cp -f $BUILD_PATH/curl/$ABI/lib/libcurl.so $BASE_PATH/libs/$ABI/libcurl.so
-	checkExitCode $?
+	#cp -f $BUILD_PATH/curl/$ABI/lib/libcurl.so $BASE_PATH/libs/$ABI/libcurl.so
+	#checkExitCode $?
 }
 
 # check system
@@ -146,11 +150,11 @@ for abi in ${APP_ABI[*]}; do
 	case $abi in
 	armeabi-v7a)
 		# https://gcc.gnu.org/onlinedocs/gcc/ARM-Options.html#ARM-Options
-		compile $abi "$NDK_ROOT/platforms/android-12/arch-arm" "$NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/$host-x86_64/bin" "arm-linux-androideabi" "-march=armv7-a -mfloat-abi=softfp -mfpu=neon"
+		compile $abi "$NDK_ROOT/platforms/android-21/arch-arm" "$NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/$host-x86_64/bin" "arm-linux-androideabi" "-march=armv7-a -mfloat-abi=softfp -mfpu=neon"
 		;;
 	x86)
 		# http://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
-		compile $abi "$NDK_ROOT/platforms/android-12/arch-x86" "$NDK_ROOT/toolchains/x86-4.9/prebuilt/$host-x86_64/bin" "i686-linux-android" "-march=i686"
+		compile $abi "$NDK_ROOT/platforms/android-21/arch-x86" "$NDK_ROOT/toolchains/x86-4.9/prebuilt/$host-x86_64/bin" "i686-linux-android" "-march=i686"
 		;;
 	arm64-v8a)
 		# https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html#AArch64-Options
